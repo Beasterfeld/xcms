@@ -2061,7 +2061,7 @@ setMethod( "broadenMzRanges", "xcmsSet", function( object, peakidx = NULL, max.p
            " does not match the number of scans (", nrow( rttab ) ,") in range in the according xcmsSet.")
     }
     
-    # -- now build a table {int, mz, rt.raw, rt.corrected, scan} as efficient as possible --
+    # ---now build a table {int, mz, rt.raw, rt.corrected, scan} as efficient as possible---
     #    ts <- diff( c( raw@scanindex, length( raw@env$mz ) ) )
     #    rt.raw  <- rep( rttab[, 1 ],        times = ts )
     #    rt.corr <- rep( rttab[, 2 ],        times = ts )
@@ -2074,7 +2074,7 @@ setMethod( "broadenMzRanges", "xcmsSet", function( object, peakidx = NULL, max.p
     for( k in which( peaks[ , "sample" ] == sample ) ){
       # k <- 8277
       # get the rawEic
-      # @TODO would `which(  rttab$corrected == peaks[ k, "rtmin" ] )` be sufficient?
+      # @TODO would `rtmin = rttab[ rttab[ ,"corrected" ] == peaks[ k, "rtmin" ], "raw" ]` be sufficient?
       rtrange <- c(
         rtmin = min( rttab[ rttab[ ,"corrected" ] >= peaks[ k, "rtmin" ], "raw" ] ),
         rtmax = max( rttab[ rttab[ ,"corrected" ] <= peaks[ k, "rtmax" ], "raw" ] )
