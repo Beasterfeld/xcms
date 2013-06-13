@@ -55,6 +55,8 @@ exportMethods(
               "findPeaks.MSW",
               "findPeaks",
               "getEIC",
+              "getEIC.profile",
+              "getEIC.raw",
               "getPeaks",
               "getScan",
               "getMsnScan",

@@ -33,7 +33,7 @@
   \item{rtrange}{
     a two column matrix the same size as \code{mzrange} with minimum
     and maximum retention times between which to return EIC data
-    points
+    points or \code{missing} for extraction over the entire scantime
 
     for \code{xcmsSet} objects, it may also be a single number
     specifying the time window around the peak to return EIC data
@@ -54,13 +54,7 @@
   }
 }
 \value{
-  For \code{xcmsRaw} objects, if \code{rtrange} is NULL, an intensity matrix
-  with a row for each \code{mzmin}, \code{mzmax} pair. Columns
-  correspond to individual scans. If \code{rtrange} is not NULL, a list of two column
-  (retention time/intensity) matricies, one for each \code{mzmin},
-  \code{mzmax} pair.
-
-  For \code{xcmsSet} objects, an \code{xcmsEIC} object.
+  For \code{xcmsRaw} and \code{xcmsSet} an \code{xcmsEIC} object.
 }
 \seealso{
   \code{\link{xcmsRaw-class}},

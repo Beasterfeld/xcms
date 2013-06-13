@@ -1418,12 +1418,23 @@ setMethod("plotPeaks", "xcmsRaw", function(object, peaks, figs, width = 200) {
 
 setGeneric("getEIC", function(object, ...) standardGeneric("getEIC"))
 
-setMethod("getEIC", "xcmsRaw", function(object, mzrange, rtrange = NULL, step = 0.1) {
+setMethod("getEIC", "xcmsRaw", function(object, method=getOption("BioC")$xcms$getEIC.method, ... ) { 
+  method <- match.arg(method, getOption("BioC")$xcms$getEIC.methods) 
+  if (is.na(method)){
+    stop("unknown method : ", method) 
+  }
+  method <- paste("getEIC", method, sep=".") 
+  invisible(do.call(method, list(object, ...))) 
+}) 
+
+setGeneric( "getEIC.profile", function(object, ...) standardGeneric("getEIC.profile") )
+
+setMethod("getEIC.profile", "xcmsRaw", function(object, mzrange, rtrange, step = 0.1) {
 
     profFun <- match.profFun(object)
     if (all(c("mzmin","mzmax") %in% colnames(mzrange)))
         mzrange <- mzrange[,c("mzmin", "mzmax"),drop=FALSE]
-
+    
 ### Create EIC buffer
     mrange <- range(mzrange)
     mass <- seq(floor(mrange[1]/step)*step, ceiling(mrange[2]/step)*step, by = step)
@@ -1462,6 +1473,48 @@ setMethod("getEIC", "xcmsRaw", function(object, mzrange, rtrange = NULL, step = 
     invisible(new("xcmsEIC", eic = list(xcmsRaw=eic), mzrange = mzrange, rtrange = rtrange,
                   rt = "raw", groupnames = character(0)))
 
+})
+
+setGeneric( "getEIC.raw", function(object, ...) standardGeneric("getEIC.raw") )
+
+setMethod("getEIC.raw", "xcmsRaw", function( object, mzrange, rtrange ) {
+  # test for mzrange
+  if( missing(mzrange) || ! is.matrix(mzrange) ){
+    stop( "Parameter mzrange of method getEIC for objects of type xcmsRaw has to be a matrix and may not be missing." )
+  }
+  if (all(c("mzmin","mzmax") %in% colnames(mzrange))){
+    mzrange <- mzrange[,c("mzmin", "mzmax"), drop=FALSE]
+  }
+  else if( ncol(mzrange) != 2 ) {
+    stop( "Parameter mzrange of method getEIC for objects of type xcmsRaw has either to be a two-column matrix, or a multi column ",
+          "matrix with columns mzmin and mzmax.")
+  }
+  # test for rtrange
+  if( missing(rtrange) ){
+    rtrange <- matrix( range(object@scantime), ncol = 2, nrow = nrow(mzrange), byrow=TRUE )
+  }
+  else if( !(is.matrix(rtrange) && nrow(rtrange) == nrow(mzrange) ) )  {
+    stop( "Parameter rtrange of method getEIC for objects of type xcmsRaw has to be either missing or a matrix with as many rows as
+          mzrange." )
+  }
+  if (all(c("rtmin","rtmax") %in% colnames(rtrange))){
+    rtrange <- rtrange[,c("rtmin", "rtmax"), drop=FALSE]
+  }
+  else if( ncol(rtrange) != 2 ){
+    stop( "Parameter rtrange of method getEIC for objects of type xcmsRaw has either to be a two-column matrix, or a multi columnmatrix",
+          "matrix with columns rtmin and mzmax (or missing at all).")
+  }
+  
+  # now extract the EICs
+  eic <- vector( mode = "list", nrow(mzrange) )
+  for( k in seq_len(nrow(mzrange)) ){
+    re <- rawEIC( object, mzrange = mzrange[k, ], rtrange = rtrange[k,] )
+    rt <- object@scantime[ object@scantime >= rtrange[k,1] & object@scantime <= rtrange[k,2] ]
+    eic[[k]] <- matrix( c(rt, re$intensity), ncol = 2)
+    colnames(eic[[k]]) <- c("rt", "intensity")
+  }
+  
+  invisible(new("xcmsEIC", eic = list(xcmsRaw=eic), mzrange = mzrange, rtrange = rtrange, rt = "raw", groupnames = character(0)))
 })
 
 setGeneric("rawMat", function(object, ...) standardGeneric("rawMat"))
