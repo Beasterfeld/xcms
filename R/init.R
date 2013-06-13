@@ -67,12 +67,21 @@
                                 start+1, 100)
     ## default method
     specDist.method <- "meanMZmatch"
-
+    
+    # all getEIC methods
+    start <- nchar("getEIC.")
+    all.xcms <- ls(asNamespace(pkgname))
+    getEIC.methods <-  substr(all.xcms[grep("getEIC\\..*", all.xcms)], start+1, 100)
+    
+    ## default getEIC method
+    getEIC.method <- "profile"
+    
     xcms.opt <- list(findPeaks.method=findPeaks.method, findPeaks.methods=findPeaks.methods,
                      group.method=group.method, group.methods=group.methods,
                      retcor.method=retcor.method, retcor.methods=retcor.methods,
                      fillPeaks.method=fillPeaks.method, fillPeaks.methods=fillPeaks.methods,
-                     specDist.methods=specDist.methods)
+                     specDist.methods=specDist.methods,
+                     getEIC.method = getEIC.method, getEIC.methods = getEIC.methods)
 
     class(xcms.opt) <- "BioCPkg"
 
