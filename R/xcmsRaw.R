@@ -835,7 +835,7 @@ setMethod("findPeaks.centWave", "xcmsRaw", function(object, ppm=25, peakwidth=c(
     if (!(identical(scanrange.old,scanrange)) && (length(scanrange.old) >0))
         cat("Warning: scanrange was adjusted to ",scanrange,"\n")
 
-    basenames <- c("mz","mzmin","mzmax","rt","rtmin","rtmax","into","intb","maxo","sn")
+    basenames <- c("mz","mzmin","mzmax","rt","rtmin","rtmax","into","intb","maxo","sn","mzminROI", "mzmaxROI")
     verbosenames <- c("egauss","mu","sigma","h","f", "dppm", "scale","scpos","scmin","scmax","lmin","lmax")
 
     ## Peak width: seconds to scales
@@ -1019,6 +1019,7 @@ setMethod("findPeaks.centWave", "xcmsRaw", function(object, ppm=25, peakwidth=c(
                                              NA,                         ## intensity (-bl)
                                              maxint,                     ## max intensity
                                              round((maxint - baseline) / sdnoise),  ##  S/N Ratio
+                                             feat$mzmin,feat$mzmax,      ## m/z range ROI
                                              NA,                         ## Gaussian RMSE
                                              NA,NA,NA,                   ## Gaussian Parameters
                                              f,                          ## ROI Position
