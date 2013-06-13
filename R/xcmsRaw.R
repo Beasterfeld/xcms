@@ -1733,12 +1733,12 @@ setMethod("rawEIC", "xcmsRaw", function(object,
     if (length(rtrange) >= 2) {
         rtrange <- range(rtrange)
         scanidx <- (object@scantime >= rtrange[1]) & (object@scantime <= rtrange[2])
-        scanrange <- c(match(TRUE, scanidx), length(scanidx) - match(TRUE, rev(scanidx)))
+        scanrange <- c(match(TRUE, scanidx), length(scanidx) +1 - match(TRUE, rev(scanidx)))
     }  else if (length(scanrange) < 2)
         scanrange <- c(1, length(object@scantime))
     else
         scanrange <- range(scanrange)
-
+    
     scanrange[1] <- max(1,scanrange[1])
     scanrange[2] <- min(length(object@scantime),scanrange[2])
 
