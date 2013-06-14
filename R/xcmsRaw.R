@@ -1419,6 +1419,9 @@ setMethod("plotPeaks", "xcmsRaw", function(object, peaks, figs, width = 200) {
 setGeneric("getEIC", function(object, ...) standardGeneric("getEIC"))
 
 setMethod("getEIC", "xcmsRaw", function(object, method=getOption("BioC")$xcms$getEIC.method, ... ) { 
+  
+  method <- ifelse( missing(method),getOption("BioC")$xcms$getEIC.method, method  )
+  
   method <- match.arg(method, getOption("BioC")$xcms$getEIC.methods) 
   if (is.na(method)){
     stop("unknown method : ", method) 

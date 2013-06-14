@@ -1589,9 +1589,26 @@ setMethod("fillPeaks", "xcmsSet", function(object, method=getOption("BioC")$xcms
     invisible(do.call(method, alist(object, ...)))
 })
 
-setMethod("getEIC", "xcmsSet", function(object, mzrange, rtrange = 200,
-                                        groupidx, sampleidx = sampnames(object),
-                                        rt = c("corrected", "raw")) {
+setMethod("getEIC", "xcmsSet", function(object, method=getOption("BioC")$xcms$getEIC.method, ... ) { 
+
+  # check if findPeaks.centWave was called, in this case set the default
+  # @TODO improve by checking upcoming @parameters slot
+  method <- ifelse( missing(method),
+                    ifelse( "mzminROI" %in% colnames(object@peaks), "raw", getOption("BioC")$xcms$getEIC.method  ),
+                    method
+                    )
+  
+  method <- match.arg(method, getOption("BioC")$xcms$getEIC.methods) 
+  if (is.na(method)){
+    stop("unknown method : ", method) 
+  }
+  method <- paste("getEIC", method, sep=".") 
+  invisible(do.call(method, list(object, ...))) 
+}) 
+
+setMethod("getEIC.profile", "xcmsSet", function( object, mzrange, rtrange = 200,
+                                                 groupidx, sampleidx = sampnames(object),
+                                                 rt = c("corrected", "raw")) {
 
     files <- filepaths(object)
     grp <- groups(object)
@@ -1656,7 +1673,7 @@ setMethod("getEIC", "xcmsSet", function(object, mzrange, rtrange = 200,
             lcraw@scantime <- object@rt$corrected[[sampidx[i]]]
         if (length(prof) > 2)
             lcraw@profparam <- prof[seq(3, length(prof))]
-        currenteic <- getEIC(lcraw, mzrange, rtrange, step = prof$step)
+        currenteic <- getEIC(lcraw, method = "profile", mzrange = mzrange, rtrange = rtrange, step = prof$step)
         eic[[i]] <- currenteic@eic[[1]]
         rm(lcraw)
         gc()
@@ -1667,6 +1684,87 @@ setMethod("getEIC", "xcmsSet", function(object, mzrange, rtrange = 200,
                   rt = rt, groupnames = gnames))
 })
 
+setMethod("getEIC.raw", "xcmsSet", function( object, mzrange, rtrange = 200,
+                                             groupidx, sampleidx = sampnames(object),
+                                             rt = c("corrected", "raw")) {
+  
+  files <- filepaths(object)
+  grp <- groups(object)
+  samp <- sampnames(object)
+  prof <- profinfo(object)
+  centWave <- "mzminROI" %in% colnames(object@peaks) 
+  
+  rt <- match.arg(rt)
+  
+  if (is.numeric(sampleidx))
+    sampleidx <- sampnames(object)[sampleidx]
+  sampidx <- match(sampleidx, sampnames(object))
+  
+  if (!missing(groupidx)) {
+    if (is.numeric(groupidx))
+      groupidx <- groupnames(object)[unique(as.integer(groupidx))]
+    grpidx <- match(groupidx, groupnames(object, template = groupidx))
+  }
+  
+  if (missing(mzrange)) {
+    
+    mzminCol <- ifelse( centWave, "mzminROI", "mzmin" )
+    mzmaxCol <- ifelse( centWave, "mzmaxROI", "mzmax" )
+    
+    if (missing(groupidx))
+      stop("No m/z range or groups specified")
+    if (any(is.na(groupval(object, value = "mz"))))
+      stop('Please use fillPeaks() to fill up NA values !')
+    mzmin <- -rowMax(-groupval(object, value = mzminCol))
+    mzmax <- rowMax(groupval(object, value = mzmaxCol))
+    mzrange <- matrix(c(mzmin[grpidx], mzmax[grpidx]), ncol = 2)
+  } else if (all(c("mzmin","mzmax") %in% colnames(mzrange)))
+    mzrange <- mzrange[,c("mzmin", "mzmax"),drop=FALSE]
+  else if (is.null(dim(mzrange)))
+    stop("mzrange must be a matrix")
+  colnames(mzrange) <- c("mzmin", "mzmax")
+  
+  if (length(rtrange) == 1) {
+    if (missing(groupidx))
+      rtrange <- matrix(rep(range(object@rt[[rt]][sampidx]), nrow(mzrange)),
+                        ncol = 2, byrow = TRUE)
+    else {
+      rtrange <- retexp(grp[grpidx,c("rtmin","rtmax"),drop=FALSE], rtrange)
+    }
+  } else if (is.null(dim(rtrange)))
+    stop("rtrange must be a matrix or single number")
+  colnames(rtrange) <- c("rtmin", "rtmax")
+  
+  if (missing(groupidx))
+    gnames <- character(0)
+  else
+    gnames <- groupidx
+  
+  eic <- vector("list", length(sampleidx))
+  names(eic) <- sampleidx
+  
+  for (i in seq(along = sampidx)) {
+    
+    cat(sampleidx[i], "")
+    flush.console()
+    lcraw <- xcmsRaw(files[sampidx[i]], profmethod = prof$method, profstep = 0)
+    if(length(object@dataCorrection) > 1){
+      if(object@dataCorrection[i] == 1)
+        lcraw<-stitch(lcraw, AutoLockMass(lcraw))
+    }
+    if (rt == "corrected")
+      lcraw@scantime <- object@rt$corrected[[sampidx[i]]]
+    
+    currenteic <- getEIC(lcraw, method = "raw", mzrange, rtrange )
+    eic[[i]] <- currenteic@eic[[1]]
+    rm(lcraw)
+    gc()
+  }
+  cat("\n")
+  
+  invisible(new("xcmsEIC", eic = eic, mzrange = mzrange, rtrange = rtrange,
+                rt = rt, groupnames = gnames))
+})
 
 getSpecWindow <- function(xs, gidxs, borderwidth=1){
     groupidx <- groupidx(xs)
