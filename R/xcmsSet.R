@@ -1480,6 +1480,7 @@ setMethod("fillPeaks.chrom", "xcmsSet", function(object, nSlaves=NULL) {
     lastpeak <- lastpeak + length(naidx)
   }
 
+    peakmat <- fillMzROIColsForFilledPeaks(peakmat)
     peaks(object) <- peakmat
     object@filled <- seq((lastpeakOrig+1),nrow(peakmat))
     groups(object) <- groupmat
@@ -1487,6 +1488,14 @@ setMethod("fillPeaks.chrom", "xcmsSet", function(object, nSlaves=NULL) {
 
     invisible(object)
 })
+
+fillMzROIColsForFilledPeaks <- function( peakmat ){
+  if( all( c("mzminROI", "mzmaxROI")  %in% colnames(peakmat) ) ){
+    peakmat[ is.na(peakmat[, "mzminROI"]), "mzminROI" ] <- peakmat[ is.na(peakmat[, "mzminROI"]), "mzmin" ]
+    peakmat[ is.na(peakmat[, "mzmaxROI"]), "mzmaxROI" ] <- peakmat[ is.na(peakmat[, "mzmaxROI"]), "mzmax" ]
+  }
+  return(peakmat)
+}
 
 setGeneric("fillPeaks.MSW", function(object, ...) standardGeneric("fillPeaks.MSW"))
 setMethod("fillPeaks.MSW", "xcmsSet", function(object, mrange=c(0,0), sample=NULL) {
@@ -1562,6 +1571,8 @@ setMethod("fillPeaks.MSW", "xcmsSet", function(object, mrange=c(0,0), sample=NUL
         }
     }
     cat("\n")
+    
+    peakmat <- fillMzROIColsForFilledPeaks(peakmat)
     peaks(object) <- peakmat
     object@filled <- seq((lastpeak+1),nrow(peakmat))
     groups(object) <- groupmat
